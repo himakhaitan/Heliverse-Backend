@@ -3,15 +3,11 @@ const router = express.Router();
 const Team = require("../models/Team");
 const User = require("../models/User");
 // Create Team
-// - Domains should be unique
-// - Availability should be true for all the members
 
 router.post("", async (req, res) => {
   const memberIDs = req.body.members;
-  const teamName = req.body.team_name;
 
   const selectedUsers = await User.find({ id: { $in: memberIDs } });
-
   //   Change MemberIds to Object Ids
   const memberObjects = selectedUsers.map((user) => user._id);
 
@@ -19,9 +15,10 @@ router.post("", async (req, res) => {
   const anyUnavailable = selectedUsers.some((user) => !user.available);
 
   if (anyUnavailable) {
-    return res
-      .status(400)
-      .json({ message: "One or more selected users are not available" });
+    return res.json({
+      success: false,
+      message: "One or more selected users are not available",
+    });
   }
   // Check for Unique Domains
 
@@ -36,22 +33,25 @@ router.post("", async (req, res) => {
   });
 
   if (hasDuplicateDomain) {
-    return res
-      .json({ message: "Users with duplicate domains are not allowed" });
+    return res.json({
+      success: false,
+      message: "Users with duplicate domains are not allowed",
+    });
   }
 
   //   Create Team
   const team = new Team({
-    team_name: teamName,
     members: memberObjects,
   });
 
   try {
-    const savedTeam = await team.save();
-    return res.json(savedTeam);
+    res.header("Access-Control-Allow-Origin", "*");
+    await team.populate("members");
+    console.log(team);
+    return res.json({ success: true, savedTeam: team });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ message: "Internal Server Error", success: false });
   }
 });
 

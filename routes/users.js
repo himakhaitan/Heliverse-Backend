@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
       available,
       name,
       page = 1,
-      limit = 10,
+      limit = 20,
     } = req.query;
 
     if (!isEmpty(domain)) filterCriteria.domain = domain;
